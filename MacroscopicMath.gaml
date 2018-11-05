@@ -85,7 +85,7 @@ species math_TB {
 }
 
 experiment Simulation_Math_TB type: gui {
-	//population
+	//my population
 	parameter 'Number of Susceptible' type: int var: S_people category: "Initial population";
 	parameter 'Number of Active TB' type: int var: I_people category: "Initial population";
 	parameter 'Number early latent TB' type: int var: Le_people category: "Initial population";
@@ -138,7 +138,7 @@ experiment Simulation_Math_TB type: gui {
 			}
 		}
 		
-		display "datalist_pie_chart" type: java2D
+		display "TB2 - PIE CHART" type: java2D
 		{
 			chart "datalist_pie_chart" type: pie style: exploded
 			{
@@ -150,7 +150,7 @@ experiment Simulation_Math_TB type: gui {
 
 		}
 				
-		display TB2 { 
+		display TB3 { 
 			chart "TB - STATCam" type: pie style: "3d"{
 				data 'S' value: first(math_TB).S color: #green;
 				data 'I' value: first(math_TB).I color: #red;
