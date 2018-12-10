@@ -8,36 +8,36 @@ model TB2
 global {
 	//My population
 	int S_people <- 500 min: 500 max:1000000; //Number of sc=usceptible individuals
-	int I_people <- 10 min:1 max: 541583; // infectious people (active TB)
-	int Le_people <- 5; // Number of early latent TB people
-	int Lf_people <- 5; // Number of late latent TB people
-	int T_people <- 2; // Number of active TB people transferred people to another hospital 
-	int K_people <- 1; // Number of active TB people who interrupt their treatment;
-	int R1_people <- 0; // Number of healthy people after treatment process and tested;
-	int R2_people <- 0; // Number of spontaneously healthy people and tested
+	int I_people <- 10 min: 1 max: 541583; // infectious people (active TB)
+	int Le_people <- 5 min: 0 max:1000000; // Number of early latent TB people
+	int Lf_people <- 5 min: 0 max:1000000; // Number of late latent TB people
+	int T_people <- 2 min: 0 max:1000000; // Number of active TB people transferred people to another hospital 
+	int K_people <- 1 min: 0 max:1000000; // Number of active TB people who interrupt their treatment;
+	int R1_people <- 0 min: 0 max:1000000; // Number of healthy people after treatment process and tested;
+	int R2_people <- 0 min: 0 max:1000000; // Number of spontaneously healthy people and tested
 	
 	//My parameter
-	float Gamma<- 10.0; // Number of recruitment in compartment S each week
-	float mu1 <-0.003; //rate of mortality not related to TB infection 
-	float mu2 <-0.003; //rate of mortality related to TB infection  
-	float beta <- 0.01; //rate of transferred people in a other hospital
-	float gamma <- 0.85; //rate of recovered after treatment process
-	float sigma <-0.02; //rate of spontaneously recovered
-	float alpha <-0.4; //rate of contact
-	float lambda <-0.008; // rate of transmission
-	float p <-0.5; // proportion of people
-	float v <-0.05; // rate of infected who interrupt their treatment 
-	float q <-0.3; // rate of progression to active TB (Le ->I)
-	float r <- 0.03; //rate of re-infection from R1 and R2 to Le
-	float r1 <- 0.02; //rate of re-infection from I to Le
-	float r2 <- 0.02; //rate of re-infection from T to Lf
-	float r3 <- 0.02; //rate of re-infection from K to Le
-	float g1 <- 0.85; //rate of recovered after treatment process from Le to R1
-	float g2 <- 0.01; // rate of spontaneously recovered from Le to R2
-	float k1 <-0.85; // rate of recovered after treatment process from Lf to R1 
-	float k2 <-0.01; //rate of spontaneously recovered from Lf to R2
-	float h <-0.5; //rate of progression of TB infection, from Le to Lf
-	float w <-0.2; // rate of slow progression of TB infection, from Lf to I 
+	float Gamma ; // Rate of recruitment in compartment S 
+	float mu1 ; //rate of mortality not related to TB infection 
+	float mu2 ; //rate of mortality related to TB infection  
+	float beta ; //rate of transferred people in a other hospital
+	float gamma ; //rate of recovered after treatment process
+	float sigma ; //rate of spontaneously recovered
+	float alpha ; //rate of contact
+	float lambda ; // rate of transmission
+	float p ; // proportion of people
+	float v ; // rate of infected who interrupt their treatment 
+	float q ; // rate of progression to active TB (Le ->I)
+	float r ; //rate of re-infection from R1 and R2 to Le
+	float r1 ; //rate of re-infection from I to Le
+	float r2 ; //rate of re-infection from T to Lf
+	float r3 ; //rate of re-infection from K to Le
+	float g1 ; //rate of recovered after treatment process from Le to R1
+	float g2 ; // rate of spontaneously recovered from Le to R2
+	float k1 ; // rate of recovered after treatment process from Lf to R1 
+	float k2 ; //rate of spontaneously recovered from Lf to R2
+	float h ; //rate of progression of TB infection, from Le to Lf
+	float w ; // rate of slow progression of TB infection, from Lf to I 
 	
 	//Total population
 	int N<- S_people + I_people + Le_people + Lf_people + T_people + K_people + R1_people + R2_people;
@@ -93,6 +93,7 @@ species math_TB {
 			}
 				
     	reflex solving {solve SLeLfITKR1R2 method: rk4 step: 0.007;
+    		
     		write("Susceptible: "+S); 
     		write("Infectious: "+I);
     		write("Latent Early: "+Le);
@@ -101,6 +102,7 @@ species math_TB {
     		write("Interupt Treatment: "+K);
     		write("Recoverd by Treatment: "+R1);
     		write("Recoverd spontaneously: "+R2);
+    		write("All compartments TOTAL: "+(S + I + Le + Lf + T + K + R1 + R2));
     	}
     	
     	
@@ -117,9 +119,9 @@ experiment Simulation_Math_TB type: gui {
 	parameter 'Number of Recovered after treatment: R1' type: int var: R1_people category: "Initial population";
 	parameter 'Number of spontaneously Recovered: R2' type: int var: R2_people category: "Initial population";
 	// my parameters
-	parameter 'Recrutment: Gamma' type: float var: Gamma <- 0.01 category: "Parameters"; //Recrutment
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 5.0 category: "Parameters"; //Recrutment
 	parameter 'Mortality linked to TB: mu1' type: float var: mu1 <- 0.03 category: "Parameters";//rate of mortality related to TB infection  
-	parameter 'Mortality not linked to TB: mu2' type: float var: mu2 <- 0.003 category: "Parameters"; //rate of mortality not related to TB infection
+	parameter 'Mortality not linked to TB: mu2' type: float var: mu2 <- 0.0003 category: "Parameters"; //rate of mortality not related to TB infection
 	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
 	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.85 category: "Parameters"; //rate of recovered after treatment process
 	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.02 category: "Parameters"; //rate of spontaneously recovered
@@ -128,7 +130,7 @@ experiment Simulation_Math_TB type: gui {
 	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.5  category: "Parameters"; // proportion of people
 	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.3  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
 	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.2  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
-	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.0  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.90  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
 	parameter'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.02  category: "Parameters"; //rate of re-infection from I to Le
 	parameter'Rate of re-infection: r2 (I->Le)' type: float var: r2 <- 0.02  category: "Parameters"; //rate of re-infection from T to Le
 	parameter'Rate of re-infection: r3 (I->Le)' type: float var: r3 <- 0.02  category: "Parameters"; //rate of re-infection from K to Le
@@ -140,7 +142,7 @@ experiment Simulation_Math_TB type: gui {
 	parameter'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.03  category: "Parameters"; //Rate of treatment interuption v (I->K)
 
 	output {
-		
+		//Afficher le plot pour tous les compartiments
 		display TBSTAT1 { 
 			chart "STATISTICS ON A SIMPLE CHART" type: series background: #white {
 				data 'S' value: first(math_TB).S marker: false color: #green;
@@ -151,6 +153,15 @@ experiment Simulation_Math_TB type: gui {
 				data 'K' value: first(math_TB).K marker: false color: #magenta;
 				data 'R1' value: first(math_TB).R1 marker: false color: #blue;
 				data 'R2' value: first(math_TB).R2 marker: false color:rgb(#77B5FE);
+			}
+		}
+		// Considerant que les compartiment "I= Le + Lf + T + K" et R= R1 + R2
+		display TBSTAT2 { 
+			chart "STATISTICS ON A SIMPLE CHART" type: series background: #white {
+				data 'S' value: first(math_TB).S marker: true color: #green;
+				data 'I' value: first(math_TB).I + first(math_TB).Le + first(math_TB).Lf +first(math_TB).T +first(math_TB).K marker: true  color: #red;
+				data 'R' value: first(math_TB).R1 + first(math_TB).R2 marker: true color: #blue;
+				//data 'R2' value: first(math_TB).R2 marker: true color:rgb(#77B5FE);
 			}
 		}
 		
