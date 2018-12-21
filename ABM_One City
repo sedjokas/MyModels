@@ -1,7 +1,7 @@
 /***
 * Name: TBmicro1
 * Author: Selain
-* Description: Agent-Based Simulation of TB spreding in a city, case study of DRC
+* Description: Agent-Based Simulation of TB spreding, case study of DRC
 * Tags: Tag1, Tag2, TagN
 ***/
 
@@ -9,35 +9,66 @@ model TBmicro1
 
 global {
 	//Number of susceptible individuals
-	int number_S <- 499; 
-	//Number of infectious individuals
-	int number_I <- 1; 
-	//Number of Resistant individuals
-	int number_Le <- 0; 
-	//Beta parameter used for the infection of susceptible individuals
-	int number_Lf <- 0; 
-	int number_R1 <- 0; 
-	int number_R2 <- 0; 
-	int number_T <- 0; 
-	int number_K <- 0; 
-	float beta <- 0.1; 
-	//Gamma parameter used for the resistance gained by the infectious individuals
-	float gamma <- 0.01;
-	float v <- 0.01;
-	float sigma <- 0.002; //rate of spontaneously recovered
+	int S_people <- 500; //Number of susceptible individuals
+	int I_people <- 10;  //Number of infectious individuals
+	int Le_people <- 0; //Number of Latent Early individuals
+	int Lf_people <- 0; //Number of Latent Late individuals
+	int R1_people <- 0; //Number of Recovered Spontaneously individuals
+	int R2_people <- 0; //Number of Recovered after traitment
+	int T_people <- 0; //Number of Transfered individuals
+	int K_people <- 0; //Number of Lost of Sight individuals
+	
 	//Size of the neighbours
-	int neighbours_size <- 2;
+	int range <- 10;
+	
 	//Total number of individuals
-	int N <- number_S + number_I + number_Le + number_Lf + number_R1 + number_R2 + number_T + number_K;
-	//Number of hosts (for ABM)
-	int nb_hosts <- number_S + number_I + number_Le + number_Lf + number_R1 + number_R2 + number_T + number_K update: length(Host);
-	//Number of infected hosts (for ABM)
-	int nb_infected <- number_I update:  Host count (each.is_infected);
+	int N <- S_people + I_people + Le_people + Lf_people + R1_people + R2_people + T_people + K_people;
+	//Number of all hosts
+	int nb_hosts <- N update: length(Host);
+	//Number of Susceptible hosts
+	int nb_susceptible <- S_people update:  Host count (each.is_susceptible);
+	//Number of infected hosts
+	int nb_infected <- I_people update:  Host count (each.is_infected);
+	//Number of latent_e hosts
+	int nb_latent_e <- Le_people update:  Host count (each.is_latent_e);
+	//Number of latent_f hosts
+	int nb_latent_f <- Lf_people update:  Host count (each.is_latent_f);
+	//Number of recovered_1 hosts
+	int nb_recovered_1 <- R1_people update:  Host count (each.is_recovered_1);
+	//Number of recovered_2 hosts
+	int nb_recovered_2<- R2_people update:  Host count (each.is_recovered_2);
+	//Number of transfered hosts
+	int nb_transfered <- T_people update:  Host count (each.is_transfered);
+	//Number of lostsight hosts
+	int nb_lostsight<- K_people update:  Host count (each.is_lostsight);
+	
+	//My parameter
+	float Gamma ; // Rate of recruitment in compartment S 
+	float mu1 ; //rate of mortality not related to TB infection 
+	float mu2 ; //rate of mortality related to TB infection  
+	float beta ; //rate of transferred people in a other hospital
+	float gamma ; //rate of recovered after treatment process
+	float sigma ; //rate of spontaneously recovered
+	float alpha ; //rate of contact
+	float lambda ; // rate of transmission
+	float p ; // proportion of people
+	float q ; // rate of progression to active TB (Le ->I)
+	float r ; //rate of re-infection from R1 and R2 to Le
+	float r1 ; //rate of re-infection from I to Le
+	float r2 ; //rate of re-infection from T to Lf
+	float r3 ; //rate of re-infection from K to Le
+	float g1 ; //rate of recovered after treatment process from Le to R1
+	float g2 ; // rate of spontaneously recovered from Le to R2
+	float k1 ; // rate of recovered after treatment process from Lf to R1 
+	float k2 ; //rate of spontaneously recovered from Lf to R2
+	float h ; //rate of progression of TB infection, from Le to Lf
+	float w ; // rate of slow progression of TB infection, from Lf to I 
+	float v ; // rate of infected who interrupt their treatment 
 	
 	geometry shape <- square(50);
 	init {
 		//Create the number of hosts susceptibles
-		create Host number: number_S {
+		create Host number: floor(S_people) {
 			is_susceptible <- true;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -47,10 +78,11 @@ global {
 			is_transfered <- false;
 			is_lostsight <- false;
 			color <- #green;
+			//is_infected_sinse <- 0.0;
 		}
 		
 //Create the number of hosts Infected
-		create Host number: number_I {
+		create Host number: I_people {
 			is_susceptible <- false;
 			is_infected <- true;
 			is_latent_e <- false;
@@ -62,8 +94,8 @@ global {
 			color <- #red;
 		}
 		
-		//Create the number of hosts Latent Early
-		create Host number: number_Le {
+		//Create the number of Latent Early hosts 
+		create Host number: Le_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- true;
@@ -76,8 +108,8 @@ global {
 			
 		}
 		
-		//Create the number of hosts Latent Late
-		create Host number: number_Lf {
+		//Create the number of Latent Late hosts 
+		create Host number: Lf_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -89,8 +121,8 @@ global {
 			color <- #yellow;
 		}
 		
-		//Create the number of hosts Recovered after traitment
-		create Host number: number_R1 {
+		//Create the number of Recovered after traitment hosts 
+		create Host number: R1_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -102,8 +134,8 @@ global {
 			color <- #blue;
 		}
 		
-			//Create the number of hosts Recovered spontaneously
-		create Host number: number_R2 {
+			//Create the number of Recovered spontaneously hosts 
+		create Host number: R2_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -115,8 +147,8 @@ global {
 			color <- rgb(#77B5FE);
 		}
 		
-			//Create the number of hosts Transfered
-		create Host number: number_T {
+			//Create the number of Transfered hosts 
+		create Host number: T_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -128,8 +160,8 @@ global {
 			color <- #gray;
 		}
 		
-			//Create the number of hosts Lost Sight
-		create Host number: number_K {
+			//Create the number of Lost Sight hosts 
+		create Host number: K_people {
 			is_susceptible <- false;
 			is_infected <- false;
 			is_latent_e <- false;
@@ -145,9 +177,9 @@ global {
 
 }
 //Grid that will be used to discretize space
-grid sir_grid width: 50 height: 50 {
+grid model_grid width: 50 height: 50 {
 		rgb color <- #black;
-		list<sir_grid> neighbours <- (self neighbors_at neighbours_size) of_species sir_grid;
+		list<model_grid> neighbours <- (self neighbors_at range) of_species model_grid;
 	}
 	
 //Species host which represents the host of the disease
@@ -163,29 +195,32 @@ species Host {
 	bool is_transfered <- false;
 	bool is_lostsight <- false;
 	
+	//float is_infected_sinse<- time;
 	
 	//Color of the host
 	rgb color <- #green;
 	
 	//Location of the agent among the grid
-	sir_grid myPlace;
+	model_grid myPlace;
 	//Count of neighbors infected 
-    int ngb_infected_number function: self neighbors_at(neighbours_size) count(each.is_infected);
+    int ngb_infected_number function: self neighbors_at(range) count(each.is_infected);
 	
 	init {
 		//The location is chosen randomly
-		myPlace <- one_of(sir_grid);
+		myPlace <- one_of(model_grid);
 		location <- myPlace.location;
 	}
 	//Reflex to move the agent in the neighbours cells
 	reflex basic_move {
-		myPlace <- one_of(myPlace.neighbours);
+		myPlace <- one_of(myPlace.neighbours); 
 		location <- myPlace.location;
+
+// ************* debut pour Is_Susceptible **************	1	 
 	}
 	//Reflex to pass the agent to the state infected 
 	reflex become_infected when: is_susceptible {
 			//Probability of being infected according to the number of infected among the neighbours
-    		if (flip(1 - (1 - beta)  ^ ngb_infected_number)) {
+    		if (flip((1 - lambda) ^ ngb_infected_number)) {  //alpha ==> ngb_infected_number
         		is_susceptible <- false;
 				is_infected <- true;
 				is_latent_e <- false;
@@ -194,11 +229,90 @@ species Host {
 				is_recovered_2<- false;
 				is_transfered <- false;
 				is_lostsight <- false;
-				color <- #red;       			
+				color <- #red; 
+				  			
 			}    				
 	}
+	
+	//Reflex to pass the agent to the state Latent Early
+		reflex become_latent_e when: is_susceptible{ 
+			if (flip(1 - (1 - lambda)  ^ ngb_infected_number)) {
+		is_susceptible <- false;
+		is_infected <- false;
+		is_latent_e <- true;
+		is_latent_f <- false;
+		is_recovered_1 <- false;
+		is_recovered_2<- false;
+		is_transfered <- false;
+		is_lostsight <- false;
+		color <- #orange;
+	} 
+
+}
+
+
+// ************* fin pour Is_Susceptibles **************	
+
+
+// ************* debut pour Is_latent_e **************	2		
+	
 	//Reflex to pass the agent to the state recovered_1
-	reflex become_recovered_1 when: (is_infected and flip(gamma)) {
+	reflex become_recovered_1 when: (is_latent_e  and flip(g1)) {
+		is_susceptible <- false;
+		is_infected <- false;
+		is_latent_e <- false;
+		is_latent_f <- false;
+		is_recovered_1 <- true;
+		is_recovered_2<- false;
+		is_transfered <- false;
+		is_lostsight <- false;
+		color <- rgb(#77B5FE);
+	} 
+	
+	//Reflex to pass the agent to the state recovered_1
+	reflex become_recovered_2 when: (is_latent_e  and flip(g2)) {
+		is_susceptible <- false;
+		is_infected <- false;
+		is_latent_e <- false;
+		is_latent_f <- false;
+		is_recovered_1 <- false;
+		is_recovered_2<- true;
+		is_transfered <- false;
+		is_lostsight <- false;
+		color <- #blue;
+	} 
+	
+		//Reflex to pass the agent to the state infected
+	reflex become_infected when: (is_latent_e  and flip(q)) {
+		is_susceptible <- false;
+		is_infected <- true;
+		is_latent_e <- false;
+		is_latent_f <- false;
+		is_recovered_1 <- false;
+		is_recovered_2<- false;
+		is_transfered <- false;
+		is_lostsight <- false;
+		color <- #red;
+	} 
+	
+		//Reflex to pass the agent to the state infected
+	reflex become_infected when: (is_latent_e  and flip(q)) {
+		is_susceptible <- false;
+		is_infected <- true;
+		is_latent_e <- false;
+		is_latent_f <- false;
+		is_recovered_1 <- false;
+		is_recovered_2<- false;
+		is_transfered <- false;
+		is_lostsight <- false;
+		color <- #red;
+	}
+
+// ************* fin pour Is_latent_e **************
+
+// ************* debut pour Is_latent_f ************** 3
+
+	reflex become_recovered_1 when: (is_latent_f  and flip(k1)) {
 		is_susceptible <- false;
 		is_infected <- false;
 		is_latent_e <- false;
@@ -210,20 +324,7 @@ species Host {
 		color <- #blue;
 	} 
 	
-	//Reflex to pass the agent to the state lostsight
-	reflex become_lostsight when: (is_infected and flip(v)) {
-		is_susceptible <- false;
-		is_infected <- false;
-		is_latent_e <- false;
-		is_latent_f <- false;
-		is_recovered_1 <- false;
-		is_recovered_2<- false;
-		is_transfered <- false;
-		is_lostsight <- true;
-		color <- #magenta;
-	}
-	//Reflex to pass the agent to the state recovered_2
-		reflex become_recovered_2 when: (is_infected and flip(sigma)) {
+		reflex become_recovered_2 when: (is_latent_f  and flip(k2)) {
 		is_susceptible <- false;
 		is_infected <- false;
 		is_latent_e <- false;
@@ -232,66 +333,276 @@ species Host {
 		is_recovered_2<- true;
 		is_transfered <- false;
 		is_lostsight <- false;
-		color <- rgb(#77B5FE);
+		color <- rgb(#77B5FE) ;
 	} 
 	
-		//Reflex to pass the agent to the state transfered
-		reflex become_transfered when: (is_infected and flip(gamma)) {
+		reflex become_infeted when: (is_latent_f  and flip(w)) {
 		is_susceptible <- false;
-		is_infected <- false;
+		is_infected <- true;
 		is_latent_e <- false;
-		is_latent_f <- false;
-		is_recovered_1 <- false;
-		is_recovered_2<- false;
-		is_transfered <- true;
-		is_lostsight <- false;
-		color <- rgb(#77B5FE);
-	} 
-	
-		//Reflex to pass the agent to the state Latent Early
-		reflex become_latent_e when: (is_infected and flip(gamma)) {
-		is_susceptible <- false;
-		is_infected <- false;
-		is_latent_e <- true;
 		is_latent_f <- false;
 		is_recovered_1 <- false;
 		is_recovered_2<- false;
 		is_transfered <- false;
 		is_lostsight <- false;
-		color <- #orange;
+		color <- #red;
 	} 
+
+// ************* fin pour Is_latent_f **************			
+
+// ************* debut pour Is_Infected **************	4
+
+	reflex become_recovered_1  when: (is_infected  and flip(gamma)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- true;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- rgb(#77B5FE);       			
+			}  
+			  				
+	reflex become_latent_e when: (is_infected  and flip(r1)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- true;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #orange;       			
+			} 
+			
+						  				
+	reflex become_transferd when: (is_infected  and flip(beta)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- true;
+				is_lostsight <- false;
+				color <- #gray;       			
+			} 	
 	
-	
-		//Reflex to pass the agent to the state Latent Late
-		reflex become_latent_f when: (is_infected and flip(gamma)) {
-		is_susceptible <- false;
-		is_infected <- false;
-		is_latent_e <- false;
-		is_latent_f <- true;
-		is_recovered_1 <- false;
-		is_recovered_2<- false;
-		is_transfered <- false;
-		is_lostsight <- false;
-		color <- #yellow;
-	} 
-	
+	reflex become_lostsight when: (is_infected  and flip(v)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- true;
+				color <- #magenta;       			
+			}
+			
+	reflex become_recovered_2  when: (is_infected  and flip(sigma)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- true;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #blue;       			
+			}
+//*************************fin pour Is_Infected 
+
+//*************************debut pour Is_Transfered 5
+		  				
+	reflex become_latent_e when: (is_transfered  and flip(r2)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- true;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #orange;       			
+			} 
+
+//*************************fin pour Is_Transfered 
+
+//*************************debut pour Is_Transfered 6
+		  				
+	reflex become_latent_e when: (is_lostsight and flip(r3)) { 
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- true;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #orange;       			
+			} 
+
+//*************************fin pour Is_Transfered 
+		
+//*************************debut pour Is_Recovered_1  --  7
+
+reflex become_infected when: is_recovered_1 {
+			//Probability of being infected according to the number of infected among the neighbours
+    		if (flip((1 - lambda) ^ ngb_infected_number)) {  //alpha ==> ngb_infected_number
+        		is_susceptible <- false;
+				is_infected <- true;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #red; 
+				  			
+			}    				
+	}
+
+reflex become_latent_e when: is_recovered_1 {
+			//Probability of being infected according to the number of infected among the neighbours
+    		if (flip(1 - (1 - lambda)  ^ ngb_infected_number  ^ r)) {  //alpha ==> ngb_infected_number
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- true;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #orange; 
+				  			
+			}    				
+	}
+
+//*************************debut pour Is_Recovered_1  --  
+
+//*************************debut pour Is_Recovered_2  --  8
+
+reflex become_infected when: is_recovered_2 {
+			//Probability of being infected according to the number of infected among the neighbours
+    		if (flip((1 - lambda) ^ ngb_infected_number)) {  //alpha ==> ngb_infected_number
+        		is_susceptible <- false;
+				is_infected <- true;
+				is_latent_e <- false;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #red; 
+				  			
+			}    				
+	}
+
+reflex become_latent_e when: is_recovered_2 {
+			//Probability of being infected according to the number of infected among the neighbours
+    		if (flip(1 - (1 - lambda)  ^ ngb_infected_number  ^ r)) {  //alpha ==> ngb_infected_number
+        		is_susceptible <- false;
+				is_infected <- false;
+				is_latent_e <- true;
+				is_latent_f <- false;
+				is_recovered_1 <- false;
+				is_recovered_2<- false;
+				is_transfered <- false;
+				is_lostsight <- false;
+				color <- #orange; 
+				  			
+			}    				
+	}
+
+
+//*************************fin pour Is_Recovered_2  -- 
+
+	reflex compter when: cycle >1{
+		write("Les Susceptibles   "+S_people); 
+		write("recritmt   "+(S_people*Gamma));  
+		write("(1 - (1 - beta) et ngb_inf  "+(flip(1 - (1 - beta)  ^ ngb_infected_number)));
+		write("(1 - (1 - beta)  "+floor(1 - (1 - beta)));  
+		write("FLIP   "+flip(gamma)); 
+		
+		write("TOTAL"+((Host as list) count (each.is_susceptible) + 
+			(Host as list) count (each.is_infected) + 
+			(Host as list) count (each.is_latent_e) + 
+			(Host as list) count (each.is_latent_f) +
+			(Host as list) count (each.is_transfered) +
+			(Host as list) count (each.is_lostsight) +
+			(Host as list) count (each.is_recovered_1) +
+			(Host as list) count (each.is_recovered_2)
+		) );
+		
+		write("TOTAL DES SUSCEPTIBLES"+((Host as list) count (each.is_susceptible)) );
+	}
+
+
 	aspect basic {
-		draw circle(0.2) color: color;
+		draw circle(0.4) color: color;
 	}
 
 }
-experiment TBmicro1 type: gui {
+experiment ABM_TB type: gui {
+	
+	 //population
+	parameter 'Number of Susceptible: S' type: int var: S_people category: "Initial population";
+	parameter 'Number of Active TB: I' type: int var: I_people category: "Initial population";
+	parameter 'Number early latent TB: Le' type: int var: Le_people category: "Initial population";
+	parameter 'Number late latent TB: Lf' type: int var: Lf_people category: "Initial population";
+	parameter 'Number of transfered TB people: T' type: int var: T_people category: "Initial population";
+	parameter 'Number of TB  interrupt treatment: K' type: int var: K_people category: "Initial population";
+	parameter 'Number of Recovered after treatment: R1' type: int var: R1_people category: "Initial population";
+	parameter 'Number of spontaneously Recovered: R2' type: int var: R2_people category: "Initial population";
+	// my parameters   
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 0.0316 category: "Parameters"; //Recrutment
+	parameter 'Mortality linked to TB: mu1' type: float var: mu1 <- 0.0 category: "Parameters";//rate of mortality related to TB infection  
+	parameter 'Mortality not linked to TB: mu2' type: float var: mu2 <- 0.0  category: "Parameters"; //rate of mortality not related to TB infection 0.0003
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.00001 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.10 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.35 category: "Parameters"; //rate of spontaneously recovered
+	//parameter 'Rate of contact' type: float var:alpha <-0.2  category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.150 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.5  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.3  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.2  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.90  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.002  category: "Parameters"; //rate of re-infection from I to Le
+	parameter'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.0002  category: "Parameters"; //rate of re-infection from T to Le
+	parameter'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.00002  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.5  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.000004  category: "Parameters"; //Rate of treatment interuption v (I->K)
+	 
 	output {
-		
 			display sir_display { 
-			grid sir_grid lines: #black;
+			grid model_grid lines: #black;
 			species Host aspect: basic;	
 		}
 		
 	display ABM { 
-			chart 'Susceptible' type: series background: #white style: exploded {
+			chart 'Serie' type: series background: #white style: exploded {
 				data 'susceptible' value: (Host as list) count (each.is_susceptible) color: #green;
-				data 'Latent_Le' value: (Host as list) count (each.is_latent_f) color: #orange;
+				data 'Latent_Le' value: (Host as list) count (each.is_latent_e) color: #orange;
+				data 'Latent_Lf' value: (Host as list) count (each.is_latent_f) color: #yellow;
+				data 'infected' value: (Host as list) count (each.is_infected) color: #red;
+				data 'Lost Sight' value: (Host as list) count (each.is_lostsight) color: #magenta;
+				data 'Recoverd_1' value: (Host as list) count (each.is_recovered_1) color: #blue;
+				data 'Recoverd_2' value: (Host as list) count (each.is_recovered_2) color: rgb(#77B5FE);				
+				data 'Transfered' value: (Host as list) count (each.is_transfered) color: #gray;
+				
+			}
+		}
+		
+		display Camamber { 
+			chart 'Camamber' type: pie style: "3d" {
+				data 'susceptible' value: (Host as list) count (each.is_susceptible) color: #green;
+				data 'Latent_Le' value: (Host as list) count (each.is_latent_e) color: #orange;
 				data 'Latent_Lf' value: (Host as list) count (each.is_latent_f) color: #yellow;
 				data 'infected' value: (Host as list) count (each.is_infected) color: #red;
 				data 'Lost Sight' value: (Host as list) count (each.is_lostsight) color: #magenta;
