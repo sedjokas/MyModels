@@ -1,0 +1,435 @@
+/***
+* Name: tb1
+* Author: selain Kasereka
+* Description: Simulation of a mathematical model of TB spreding, case study of DRC
+* DFE à 131 années si on prend en compte les perdus de vue 
+* DFE à 140 années si on ne considere pas les perdus de vue
+* Avantages: 
+***/
+
+model TB2
+
+global {
+	//My population
+	int S_people <- 100000 min: 50 max:100000000; //Number of sc=usceptible individuals
+	int I_people <-1 ; // infectious people (active TB) (0,0187)
+	int Le_people <- 0 min: 0 max:1000000; // Number of early latent TB people
+	int Lf_people <- 0 min: 0 max:1000000; // Number of late latent TB people
+	int T_people <- 0 ; // Number of active TB people transferred people to another hospital 
+	int K_people <- 0 ; // Number of active TB people who interrupt their treatment;
+	int R1_people <- 0 min: 0 max:1000000; // Number of healthy people after treatment process and tested;
+	int R2_people <- 0 min: 0 max:1000000; // Number of spontaneously healthy people and tested
+	
+	//My parameter
+	float Gamma ; // Rate of recruitment in compartment S 
+	float mu1 ; //rate of mortality not related to TB infection 
+	float mu2 ; //rate of mortality related to TB infection  
+	float beta ; //rate of transferred people in a other hospital
+	float gamma ; //rate of recovered after treatment process
+	float sigma ; //rate of spontaneously recovered
+	float alpha ; //rate of contact
+	float lambda ; // rate of transmission
+	float p ; // proportion of people
+	float v ; // rate of infected who interrupt their treatment 
+	float q ; // rate of progression to active TB (Le ->I)
+	float r ; //rate of re-infection from R1 and R2 to Le
+	float r1 ; //rate of re-infection from I to Le
+	float r2 ; //rate of re-infection from T to Lf
+	float r3 ; //rate of re-infection from K to Le
+	float g1 ; //rate of recovered after treatment process from Le to R1
+	float g2 ; // rate of spontaneously recovered from Le to R2
+	float k1 ; // rate of recovered after treatment process from Lf to R1 
+	float k2 ; //rate of spontaneously recovered from Lf to R2
+	float h ; //rate of progression of TB infection, from Le to Lf
+	float w ; // rate of slow progression of TB infection, from Lf to I 
+	float A <- mu1 + h + q + g1 + g2;
+    float B <- mu1 + w + k1 + k2;
+	float C <- r1 + gamma + beta + sigma + v + mu1 + mu2;
+	float D <- mu1 + mu2 + r2;
+	float E <- mu1 + mu2 + r3;
+	float Q <- (alpha*lambda*p*Gamma)/mu1;
+	float G <- (alpha*lambda*(1-p)*Gamma)/mu1;
+	//Total population
+	
+	float R0 <- (A*B*D*E*G + B*D*E*Q*q + D*E*Q*h*w )/( A*B*C*D*E - B*D*E*q*r1 - B*E*beta*q*r2 - B*D*q*r3*v - D*E*w*h*r1 - E*beta*w*h*r2 - D*w*h*r3*v); 
+	int N<- S_people + I_people + Le_people + Lf_people + T_people + K_people + R1_people + R2_people;
+	float R_1 <- (A*B*D*E*G + B*D*E*Q*q + D*E*Q*h*w );
+	float R_2 <- ( A*B*C*D*E - B*D*E*q*r1 - B*E*beta*q*r2 - B*D*q*r3*v - D*E*w*h*r1 - E*beta*w*h*r2 - D*w*h*r3*v);
+	float R_3 <- (R_1/R_2);	
+
+	init {
+		//Create node agent for ODE System
+		create math_TB number: 1 {
+			S <- float(S_people);
+			I <- float(I_people);
+			Le <- float(Le_people);
+			Lf <- float(Lf_people);
+			T <- float(T_people);
+			K <- float(K_people);
+			R1<- float(R1_people);
+			R2 <- float(R2_people);
+		}
+	}
+
+	reflex stop_simulation when: (cycle = 100) {
+					do pause ;
+			}
+			
+			
+	  reflex save_data when: every(1#cycle){
+		//save the following text into the given text file. Note that each time the save statement is used, a new line is added at the end of the file.
+		save (""+cycle+ ";"+first(math_TB).S+";"+first(math_TB).I+";"+first(math_TB).Le+";"+first(math_TB).Lf+";"+first(math_TB).T+";"+first(math_TB).K+";"+first(math_TB).R1+";"+first(math_TB).R2) to: "../results/dataall.txt" rewrite: false;
+		save (""+cycle+";"+first(math_TB).S+";"+first(math_TB).I+first(math_TB).Le+first(math_TB).Lf+first(math_TB).T+first(math_TB).K+";"+first(math_TB).R1+first(math_TB).R2) to: "../results/datasir.txt" rewrite: false;
+		//save [name,speed, size] to: "../results/bug.csv" type:"csv"
+		
+		//save the following text into the given text file. Note that each time the save statement is used, a new line is added at the end of the file.
+		save [cycle,first(math_TB).S,first(math_TB).I,first(math_TB).Le,first(math_TB).Lf,first(math_TB).T,first(math_TB).K,first(math_TB).R1,first(math_TB).R2] to: "../results/dataall.csv" type:"csv" rewrite: false ;
+		save [cycle,first(math_TB).S,first(math_TB).I+first(math_TB).Le+first(math_TB).Lf+first(math_TB).T+first(math_TB).K,first(math_TB).R1+first(math_TB).R2] to: "../results/datasir.csv" type:"csv" rewrite: false;
+		
+	} 
+}
+
+//Species node agent that will represent the ODE system
+species math_TB {
+	float t;    
+	float S <- N-I-Le-Lf-T-K; 
+	float I;
+	float Le;
+	float Lf;
+	float T;
+	float K ;
+	float R1 ;
+	float R2 ;
+
+/*	equation SLeLfITKR1R2 { 
+		    diff(S,t) = (Gamma - alpha*lambda*p *S * I - alpha*lambda*(1-p)*S*I - mu1*S);
+		    diff(Le,t) = (alpha*lambda*p *S * I + alpha*lambda*r*I*(R1 + R2) + r1*I + r2*T + r3*K - (mu1 + h + q+ g1+ g2)*Le);
+			diff(Lf,t) = (h*Le - (mu1 + w + k1 + k2)*Lf);
+			diff(I,t)= (w*Lf + q*Le - (r1 + gamma + beta + sigma + v + mu1 + mu2)*I + alpha*lambda*r*R1*I + alpha*lambda*r*R2*I + alpha*lambda*(1-p)*S*I);
+			diff(R1,t)= (g1*Le + k1*Lf + gamma*I - alpha*lambda*r*R1*I - mu1*R1 -alpha*lambda*r*R1*I);
+			diff(R2,t)= (sigma*I + k2*Lf + g2*Le - alpha*lambda*r*R2*I - alpha*lambda*r*R2*I - mu1*R2);
+			diff(T,t)= (beta*I - (mu1 + mu2 + r2)*T);
+			diff(K,t)= (v*I - (mu1 + mu2 + r3)*K);
+			} 
+			reflex solving {solve SLeLfITKR1R2 method: rk4 step: 0.0005;
+			
+	*/			
+	equation SLeLfITKR1R2 { 
+		    diff(S,t) = (Gamma - alpha*lambda*p *S * I - alpha*lambda*(1-p)*S*I - mu1*S);
+		    diff(Le,t) = (alpha*lambda*p *S * I + alpha*lambda*r*I*(R1 + R2) + r1*I + r2*T + r3*K - (mu1 + h + q+ g1+ g2)*Le);
+			diff(Lf,t) = (h*Le - (mu1 + w + k1 + k2)*Lf);
+			diff(I,t)= (w*Lf + q*Le - (r1 + gamma + beta + sigma + v + mu1 + mu2)*I + alpha*lambda*R1*I + alpha*lambda*R2*I + alpha*lambda*(1-p)*S*I);
+			diff(R1,t)= (g1*Le + k1*Lf + gamma*I - alpha*lambda*r*R1*I - mu1*R1 -alpha*lambda*R1*I);
+			diff(R2,t)= (sigma*I + k2*Lf + g2*Le - alpha*lambda*R2*I - alpha*lambda*r*R2*I - mu1*R2);
+			diff(T,t)= (beta*I - (mu1 + mu2 + r2)*T);
+			diff(K,t)= (v*I - (mu1 + mu2 + r3)*K);
+			}
+				
+    	reflex solving {solve SLeLfITKR1R2 method: rk4 step: 0.7;
+    	
+    
+    	
+    	write("SORIE DES Susceptibles: "+(alpha*lambda*p *S * I + alpha*lambda*(1-p)*S*I + mu1*S)); 
+    	write("ARRIV DES INFECTIOUS: "+(w*Lf + q*Le+alpha*lambda*r*R1*I + alpha*lambda*r*R2*I + alpha*lambda*(1-p)*S*I)); 
+    	
+    		/*write("Susceptible: "+first(math_TB).S); 
+    		write("Infectious: "+(first(math_TB).I));
+    		write("Latent Early: "+Le);
+    		write("Latent Late: "+Lf);
+    		write("Transfered: "+T);
+    		write("Interupt Treatment: "+K);
+    		write("Recoverd by Treatment: "+R1);
+    		write("Recoverd spontaneously: "+R2);
+    		write("All compartments TOTAL: "+(S + I + Le + Lf + T + K + R1 + R2));
+    		write("Cycle est : "+cycle); 
+    		cycle <-int(cycle/10);
+    		int a<-0;
+    		 
+    		if (I=0.00001 and Le =0.00001 and Lf = 0.00001 and T = 0.00001 and K = 0.00001 and R1 = 0.00001 and R2=0.00001) {
+    			write("Cycle à stabilite globale est : "+cycle);    		
+    			}
+             
+             float x <- first(math_TB).I + first(math_TB).R1 + first(math_TB).R2 + first(math_TB).Le + first(math_TB).Lf+ first(math_TB).T + first(math_TB).K;
+				
+				if ( round(x) <= 0.001 ){
+					write(" ============ DFE à :"+cycle+ " CYCLES");
+					write(" ============ round(I + R1 + R2 + Le + Lf+ T +K ) ==> :"+round(I + R1 + R2 + Le + Lf+ T +K ) + " Personnes");
+					//goto stop;
+				}
+			*/    	
+					write("R0: "+R0); 
+					//write("R_1: "+R_1); 
+					//write("R_2: "+R_2);
+					write("VraiR0: "+R_1/R_2); 
+					write("R_3: "+R_3);  
+					
+					//Reflex saving the agents every 1 steps. 
+			
+    	}
+    	
+   
+}
+ 
+experiment Simulation_Math_TB type: gui {
+	
+	//file name: "results" type: text data: time + "; " + first(math_TB).I + ";" + first(math_TB).I refresh:every(2);  
+	
+
+	//population INITIAL et dans le travail
+	parameter 'Number of Susceptible: S' type: int var: S_people category: "Initial population";
+	parameter 'Number of Active TB: I' type: int var: I_people category: "Initial population";
+	parameter 'Number early latent TB: Le' type: int var: Le_people category: "Initial population";
+	parameter 'Number late latent TB: Lf' type: int var: Lf_people category: "Initial population";
+	parameter 'Number of transfered TB people: T' type: int var: T_people category: "Initial population";
+	parameter 'Number of TB  interrupt treatment: K' type: int var: K_people category: "Initial population";
+	parameter 'Number of Recovered after treatment: R1' type: int var: R1_people category: "Initial population";
+	parameter 'Number of spontaneously Recovered: R2' type: int var: R2_people category: "Initial population";
+	// my parameters R0=3.9934694197061926 
+	/* 
+    parameter 'Recrutment: Gamma' type: float var: Gamma <- 10.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.00322  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.016 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.1 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.001  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.0129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.063  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.063  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.063  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.04 category: "Parameters"; //Rate of treatment interuption v (I->K)
+	
+	Nickel pour 1000 personnes
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 10.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.00322  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.016 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.1 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.1  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.0129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.0000821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.0000063  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.0000063  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.0000063  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.0 category: "Parameters"; //Rate of treatment interuption v (I->K)
+	*/
+	//PAS MAL SIR
+	/*parameter 'Recrutment: Gamma' type: float var: Gamma <- 1.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.00666 category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.04 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.5 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.1 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.03 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.1  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.0129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.0000000063  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.0000000063  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.0000000063  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.5  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.5 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.04 category: "Parameters"; //Rate of treatment interuption v (I->K)
+	
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 10.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.0066  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.09 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.15 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.950  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.0129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.0000821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.000063  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.63  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.63  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.03 category: "Parameters"; //Rate of treatment interuption v (I->K)
+
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 1000.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.00733  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.1 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.01 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.1 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.95  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.63  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.63  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.63  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.030 category: "Parameters"; //Rate of treatment interuption v (I->K)
+*/
+
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 1000.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.0019  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.025 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.001 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.02 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.095  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.0129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.0000821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.00063  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.63  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.63  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.04 category: "Parameters"; //Rate of treatment interuption v (I->K)
+
+
+ /* 
+	//population INITIAL et dans le travail  R0=0.6160266075044831
+	parameter 'Number of Susceptible: S' type: int var: S_people category: "Initial population";
+	parameter 'Number of Active TB: I' type: int var: I_people category: "Initial population";
+	parameter 'Number early latent TB: Le' type: int var: Le_people category: "Initial population";
+	parameter 'Number late latent TB: Lf' type: int var: Lf_people category: "Initial population";
+	parameter 'Number of transfered TB people: T' type: int var: T_people category: "Initial population";
+	parameter 'Number of TB  interrupt treatment: K' type: int var: K_people category: "Initial population";
+	parameter 'Number of Recovered after treatment: R1' type: int var: R1_people category: "Initial population";
+	parameter 'Number of spontaneously Recovered: R2' type: int var: R2_people category: "Initial population";
+	 // my parameters   
+	parameter 'Recrutment: Gamma' type: float var: Gamma <- 100.0 category: "Parameters"; //Recrutment
+	parameter 'Natural Mortality: mu1' type: float var: mu1 <- 0.00666  category: "Parameters";//rate of natural mortality   
+	parameter 'Mortality linked to TB: mu2' type: float var: mu2 <-  0.04 category: "Parameters"; //rate of mortality related to TB infection
+	parameter 'Rate of transfer: beta (I->T)' type: float var:beta <- 0.01 category: "Parameters"; //rate of transferred people in a other hospital
+	parameter 'Rate of recovered after treatment: gamma (I->R1)' type: float var:gamma <- 0.84 category: "Parameters"; //rate of recovered after treatment process
+	parameter 'Rate of spontaneously recovered: sigma (I->R2)' type: float var: sigma<-0.25 category: "Parameters"; //rate of spontaneously recovered
+	parameter 'Rate of contact' type: float var:alpha <- 0.01 category: "Parameters"; //rate of contact
+	parameter 'Rate of transmission: lambda' type: float var: lambda <- 0.1 category: "Parameters"; // rate of transmission
+	parameter 'Proportion of people: p (S-> Le & I)' type: float var: p <-0.95  category: "Parameters"; // proportion of people
+	parameter 'Rate of progression to ATB: q (Le->I)' type: float var: q <-0.129  category: "Parameters"; // Rate of progression to ATB: q (Le->I)
+	parameter 'Rate of progression to ATB: w (Lf->I)' type: float var: w <-0.075  category: "Parameters"; // Rate of progression to ATB: w (Lf->I)
+	parameter 'Rate of progression to Latent late: h (Le->Lf)' type: float var:h <- 0.821  category: "Parameters"; //rate of re-infection from R1 and R2 to Le
+	parameter 'Rate of re-infection: r1 (I->Le)' type: float var: r1 <- 0.63  category: "Parameters"; //rate of re-infection from I to Le
+	parameter 'Rate of re-infection: r2 (T->Le)' type: float var: r2 <- 0.63  category: "Parameters"; //rate of re-infection from T to Le
+	parameter 'Rate of re-infection: r3 (K->Le)' type: float var: r3 <- 0.63  category: "Parameters"; //rate of re-infection from K to Le
+	parameter 'Recovered after treatment: g1 (Le->R1)' type: float var: g1 <- 0.84  category: "Parameters"; //rate of recovered after treatment process from Le to R1
+	parameter 'Recovered spontaneously: g2 (Le->R2)' type: float var: g2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Le to R2
+	parameter 'Recovered after treatment: k1 (Lf->R1)' type: float var: k1 <- 0.84 category: "Parameters"; //rate of recovered after treatment process from Lf to R1
+	parameter 'Recovered spontaneously: k2(Lf->R2)' type: float var: k2 <- 0.25  category: "Parameters"; // rate of spontaneously recovered from Lf to R2
+	parameter 'Rate of reactivation: r (R1 & R2 -> Le)' type: float var: r <- 0.030  category: "Parameters"; // Rate of reactivation: r (R1 & R2 -> Le)
+	parameter 'Rate of treatment interuption: v (I->K)' type: float var: v <- 0.03 category: "Parameters"; //Rate of treatment interuption v (I->K)
+	*/
+ 
+	output {
+		//Afficher le plot pour tous les compartiments      
+		display TB_ALL{ 
+			chart "" type: series background: #white x_range:[0 ,150] x_tick_unit:10
+			x_label: "Time (Years)" y_label: "Number of S(t), I(t), Le(t), Lf(t), T(t), K(t), R1(t) and R2(t)" 
+			tick_font: 'Times New Roman' tick_font_size: 14 tick_font_style: 'plain'
+			legend_font_size: 18 
+			label_font: 'Arial' label_font_size: 18 label_font_style: 'plain'{
+				data 'S(t)' value: first(math_TB).S color: #green ;
+				data 'I(t)' value: first(math_TB).I marker: true  color: #red;
+				data 'Le(t)' value: first(math_TB).Le marker: true color: #orange;
+				data 'Lf(t)' value: first(math_TB).Lf marker: true color: #yellow;
+				data 'T(t)' value: first(math_TB).T marker: true color: #gray;
+				data 'K(t)' value: first(math_TB).K marker: true color: #magenta;
+				data 'R1(t)' value: first(math_TB).R1 marker: true color: #blue;
+				data 'R2(t)' value: first(math_TB).R2 marker: true color:rgb(#77B5FE);
+			}
+		}
+	  
+		display TB_ALL_sans_dot{ 
+			chart "" type: series background: #white x_range:[0 ,150] x_tick_unit:10
+			x_label: "Time (Years)" y_label: "Number of S(t), I(t), Le(t), Lf(t), T(t), K(t), R1(t) and R2(t)" 
+			tick_font: 'Times New Roman' tick_font_size: 14 tick_font_style: 'plain'
+			legend_font_size: 18
+			label_font: 'Arial' label_font_size: 18 label_font_style: 'plain'{
+				data 'S(t)' value: first(math_TB).S marker: true color: #green;
+				data 'I(t)' value: first(math_TB).I marker: true  color: #red;
+				data 'Le(t)' value: first(math_TB).Le marker: true color: #orange;
+				data 'Lf(t)' value: first(math_TB).Lf marker: true color: #yellow;
+				data 'T(t)' value: first(math_TB).T marker: true color: #gray;
+				data 'K(t)' value: first(math_TB).K marker: true color: #magenta;
+				data 'R1(t)' value: first(math_TB).R1 marker: true color: #blue;
+				data 'R2(t)' value: first(math_TB).R2 marker: true color:rgb(#77B5FE);
+			}
+		}
+		// Considerant que les compartiment "I= Le + Lf + T + K" et R= R1 + R2
+		display TB_SIR { 
+			chart "" type: series background: #white x_range:[0 ,150] x_tick_unit:10
+			x_label: "Time (Years)" y_label: "Number of S(t), I(t) and R(t)" 
+			tick_font: 'Times New Roman' tick_font_size: 14 tick_font_style: 'plain'
+			legend_font_size: 18 
+			label_font: 'Arial' label_font_size: 18 label_font_style: 'plain'{
+				data 'S(t)' value: first(math_TB).S marker: true color: #green ;
+				data 'I(t)' value: int(first(first(math_TB).I + first(math_TB).Le + first(math_TB).Lf +first(math_TB).T +first(math_TB).K)) marker: true  color: #red;
+				data 'R(t)' value: first(first(math_TB).R1 + first(math_TB).R2) marker: true color: #blue;
+				//data 'R2' value: first(math_TB).R2 marker: true color:rgb(#77B5FE);
+				
+			}
+		}
+		
+		display "TB2" type: java2D
+		{
+			chart "" type: pie style: exploded
+			{
+				datalist legend: ["S", "I", "Le", "Lf", "T", "K", "R1", "R2"] value: [[first(math_TB).S], [first(math_TB).I],[first(math_TB).Le],[first(math_TB).Lf],[first(math_TB).T],
+					[first(math_TB).K],[first(math_TB).R1],[first(math_TB).R2]
+				] 
+				color: [# green, # red, # orange, # yellow, # gray, # magenta, # blue, rgb(#77B5FE)];
+			}
+
+		}
+				
+		/*display TBSTAT2 { 
+			chart "STATISTICS ON A PIE CHART" type: pie style: "3d"{
+				data 'S' value: first(math_TB).S color: #green;
+				data 'I' value: first(math_TB).I color: #red;
+				data 'Le' value: first(math_TB).Le color: #orange;
+				data 'Lf' value: first(math_TB).Lf color: #yellow;
+				data 'T' value: first(math_TB).T color: #gray;
+				data 'K' value: first(math_TB).K color: #magenta;
+				data 'R1' value: first(math_TB).R1 color: #blue;
+				data 'R2' value: first(math_TB).R2 color:rgb(#77B5FE);
+			}
+		}*/
+	}
+
+}
