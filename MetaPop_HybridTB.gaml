@@ -313,7 +313,7 @@ action creer_homme_in_ville {
 			            is_immune2 <- true; 
 			            is_lost <- false;
 			            is_trans <- false; 
-			            color <-  rgb(#77B5FE);
+			            color <-  rgb(#black);
 			            depart<-true;
 			            
 	 					}
@@ -673,7 +673,7 @@ experiment HybridTB type: gui {
 				data 'T' value: sum(ville collect each.T) color: #gray ;
 				data 'K' value: sum(ville collect each.K) color: #magenta ;
 				data 'R1' value: sum(ville collect each.R1) color: #blue ;				
-				data 'R2' value: sum(ville collect each.R2) color: rgb(#77B5FE) ;
+				data 'R2' value: sum(ville collect each.R2) color: rgb(#black) ;
 			}
 		}
 		
@@ -686,7 +686,7 @@ experiment HybridTB type: gui {
 				data 'T' value: sum(ville collect each.T) color: #gray ;
 				data 'K' value: sum(ville collect each.K) color: #magenta ;
 				data 'R1' value: sum(ville collect each.R1) color: #blue ;				
-				data 'R2' value: sum(ville collect each.R2) color: rgb(#77B5FE) ;
+				data 'R2' value: sum(ville collect each.R2) color: rgb(#black) ;
 			}
 		}
 		
@@ -699,7 +699,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first(statistique).som_T color: #gray ;
 				data 'K' value: first(statistique).som_K color: #magenta ;					
 				data 'R1' value: first(statistique).som_R1 color: #blue;
-				data 'R2' value: first(statistique).som_R2  color: rgb(#77B5FE)  ;
+				data 'R2' value: first(statistique).som_R2  color: rgb(#black)  ;
 			}
 		}*/
 			display City_1 refresh_every: 1 {
@@ -711,7 +711,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=0)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=0)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=0)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=0)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=0)).R2 color: rgb(#black)  ;
 				
 			}
 		}
@@ -724,7 +724,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=1)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=1)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=1)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=1)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=1)).R2 color: rgb(#black)  ;
 				
 			}
 		}
@@ -738,7 +738,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=2)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=2)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=2)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=2)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=2)).R2 color: rgb(#black)  ;
 				
 			}
 		}
@@ -752,7 +752,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=3)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=3)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=3)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=3)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=3)).R2 color: rgb(#black)  ;
 				
 			}
 		}
@@ -765,7 +765,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=4)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=4)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=4)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=4)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=4)).R2 color: rgb(#black)  ;
 				
 			}
 		}
@@ -779,7 +779,7 @@ experiment HybridTB type: gui {
 				data 'T' value: first((ville as list) where (each.compte_ville=5)).T color: #gray ; 
 				data 'K' value: first((ville as list) where (each.compte_ville=5)).K color:  #magenta  ;
 				data 'R1' value: first((ville as list) where (each.compte_ville=5)).R1 color: #blue ;
-				data 'R2' value: first((ville as list) where (each.compte_ville=5)).R2 color: rgb(#77B5FE)  ;
+				data 'R2' value: first((ville as list) where (each.compte_ville=5)).R2 color: rgb(#black)  ;
 				
 			}
 		}
