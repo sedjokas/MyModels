@@ -161,7 +161,7 @@ experiment Simulation_Math_TB type: gui {
 				data 'T' value: first(math_TB).T marker: false color: #gray;
 				data 'K' value: first(math_TB).K marker: false color: #magenta;
 				data 'R1' value: first(math_TB).R1 marker: false color: #blue;
-				data 'R2' value: first(math_TB).R2 marker: false color:rgb(#77B5FE);
+				data 'R2' value: first(math_TB).R2 marker: false color:rgb(#black);
 			}
 		}
 		// Considerant que les compartiment "I= Le + Lf + T + K" et R= R1 + R2
@@ -170,7 +170,7 @@ experiment Simulation_Math_TB type: gui {
 				data 'S' value: first(math_TB).S marker: true color: #green;
 				data 'I' value: first(math_TB).I + first(math_TB).Le + first(math_TB).Lf +first(math_TB).T +first(math_TB).K marker: true  color: #red;
 				data 'R' value: first(math_TB).R1 + first(math_TB).R2 marker: true color: #blue;
-				//data 'R2' value: first(math_TB).R2 marker: true color:rgb(#77B5FE);
+				//data 'R2' value: first(math_TB).R2 marker: true color:rgb(#black);
 			}
 		}
 		
@@ -181,7 +181,7 @@ experiment Simulation_Math_TB type: gui {
 				datalist legend: ["S", "I", "Le", "Lf", "T", "K", "R1", "R2"] value: [[first(math_TB).S], [first(math_TB).I],[first(math_TB).Le],[first(math_TB).Lf],[first(math_TB).T],
 					[first(math_TB).K],[first(math_TB).R1],[first(math_TB).R2]
 				] 
-				color: [# green, # red, # orange, # yellow, # gray, # magenta, # blue, rgb(#77B5FE)];
+				color: [# green, # red, # orange, # yellow, # gray, # magenta, # blue, rgb(#black)];
 			}
 
 		}
@@ -195,7 +195,7 @@ experiment Simulation_Math_TB type: gui {
 				data 'T' value: first(math_TB).T color: #gray;
 				data 'K' value: first(math_TB).K color: #magenta;
 				data 'R1' value: first(math_TB).R1 color: #blue;
-				data 'R2' value: first(math_TB).R2 color:rgb(#77B5FE);
+				data 'R2' value: first(math_TB).R2 color:rgb(#black);
 			}
 		}*/
 	}
