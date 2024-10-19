@@ -144,7 +144,7 @@ global {
 			is_recovered_2<- true;
 			is_transfered <- false;
 			is_lostsight <- false;
-			color <- rgb(#77B5FE);
+			color <- #black;
 		}
 		
 			//Create the number of Transfered hosts 
@@ -266,7 +266,7 @@ species Host {
 		is_recovered_2<- false;
 		is_transfered <- false;
 		is_lostsight <- false;
-		color <- rgb(#77B5FE);
+		color <- #black;
 	} 
 	
 	//Reflex to pass the agent to the state recovered_1
@@ -321,7 +321,7 @@ species Host {
 		is_recovered_2<- true;
 		is_transfered <- false;
 		is_lostsight <- false;
-		color <- rgb(#77B5FE) ;
+		color <- #black ;
 	} 
 	
 		reflex become_infeted_from_Lf when: (is_latent_f  and flip(w)) {
@@ -583,7 +583,7 @@ experiment ABM_TB type: gui {
 				data 'infected' value: (Host as list) count (each.is_infected) color: #red;
 				data 'Lost Sight' value: (Host as list) count (each.is_lostsight) color: #magenta;
 				data 'Recoverd_1' value: (Host as list) count (each.is_recovered_1) color: #blue;
-				data 'Recoverd_2' value: (Host as list) count (each.is_recovered_2) color: rgb(#77B5FE);				
+				data 'Recoverd_2' value: (Host as list) count (each.is_recovered_2) color: #black;				
 				data 'Transfered' value: (Host as list) count (each.is_transfered) color: #gray;
 				
 			}
@@ -597,7 +597,7 @@ experiment ABM_TB type: gui {
 				data 'infected' value: (Host as list) count (each.is_infected) color: #red;
 				data 'Lost Sight' value: (Host as list) count (each.is_lostsight) color: #magenta;
 				data 'Recoverd_1' value: (Host as list) count (each.is_recovered_1) color: #blue;
-				data 'Recoverd_2' value: (Host as list) count (each.is_recovered_2) color: rgb(#77B5FE);				
+				data 'Recoverd_2' value: (Host as list) count (each.is_recovered_2) color: #black;				
 				data 'Transfered' value: (Host as list) count (each.is_transfered) color: #gray;
 				
 			}
